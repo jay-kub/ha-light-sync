@@ -38,6 +38,7 @@ trigger:
   entity_id: !input controlling_light
   attribute: brightness
 condition: []
+action:
   - choose:
       - conditions:
           - condition: state
