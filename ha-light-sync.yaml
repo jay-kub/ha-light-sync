@@ -21,7 +21,11 @@ blueprint:
           multiple: true
     min_brightness:
       name: Min Brightness
-      description: Set the minimum brightness for the target light, as a percentage (1-100).
+      description: Set the minimum brightness for the target light(s), as a percentage (1-100).
+      selector:
+        number:
+          min: 1
+          max: 100
 mode: restart
 max_exceeded: silent
 variables:
@@ -46,7 +50,7 @@ action:
             state: "on"
         sequence:
           - data:
-              brightness: '{{ brightness_value }}'
+              brightness: '{{ minBrightness }}'
             action: light.turn_on
             target:
               entity_id: !input target_light
