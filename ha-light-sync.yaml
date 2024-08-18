@@ -50,7 +50,7 @@ action:
             state: "on"
         sequence:
           - data:
-              brightness: '{{ minBrightness }}'
+              brightness: '{{ brightnessValue }}'
             action: light.turn_on
             target:
               entity_id: !input target_light
