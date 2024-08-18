@@ -62,8 +62,3 @@ action:
           - data:
               entity_id: !input target_light
             action: light.turn_off
-    default:
-      - target:
-          entity_id: !input target_light
-        action: light.turn_on
-        data: {}
