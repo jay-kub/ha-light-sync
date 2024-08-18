@@ -1,0 +1,64 @@
+blueprint:
+  name: Light Sync
+  description: Sync the state and brightness of one light to another light(s)
+  domain: automation
+  input:
+    controlling_light:
+      name: Controlling Light
+      selector:
+        entity:
+          filter:
+          - domain:
+            - light
+          multiple: false
+    target_light:
+      name: Target Light
+      selector:
+        entity:
+          filter:
+          - domain:
+            - light
+          multiple: true
+    min_brightness:
+      name: Min Brightness
+      description: Set the minimum brightness for the target light, as a percentage (1-100).
+mode: restart
+max_exceeded: silent
+variables:
+  controllingLight: !input controlling_light
+  controllingLightBrightness: |
+    {{ (state_attr(controllingLight, 'brightness') / 2.55) }}
+  minBrightness: !input min_brightness
+  brightnessValue: |
+    {{ ((((100 - minBrightness) / 99 ) * controllingLightBrightness + minBrightness - (100 - minBrightness) / 99 ) * 2.55) | round(0) }}
+trigger:
+- platform: state
+  entity_id: !input controlling_light
+- platform: state
+  entity_id: !input controlling_light
+  attribute: brightness
+condition: []
+  - choose:
+      - conditions:
+          - condition: state
+            entity_id: !input controlling_light
+            state: "on"
+        sequence:
+          - data:
+              brightness: '{{ brightness_value }}'
+            action: light.turn_on
+            target:
+              entity_id: !input target_light
+      - conditions:
+          - condition: state
+            entity_id: !input controlling_light
+            state: "off"
+        sequence:
+          - data:
+              entity_id: !input target_light
+            action: light.turn_off
+    default:
+      - target:
+          entity_id: !input target_light
+        action: light.turn_on
+        data: {}
