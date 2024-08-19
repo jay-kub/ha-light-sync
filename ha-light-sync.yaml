@@ -2,7 +2,9 @@ blueprint:
   name: Light Sync
   description: "Sync the on/off state and brightness of one light to another light(s)\n\nThe following recommended settings will help make the transitions more fluid:\n\n- 
     Transitions from on to off should be set to 0 for all devices\n- Initial On Level should match for all devices \n- The device settings for the Control Light 
-    should not have a minimum brigtness\n- Slow down the dimming speed on the Control Light to account for lag\n\nPlease note, the Control Light brightness must be able to scale between 1-100. When Minimum Brightness is > 1, the script will ensure the Target Light never falls below that value, with an adjusted linear scale between the minimum value and 100%. Because of this, the brightness value for each light will appear different."
+    should not have a minimum brigtness\n- Slow down the dimming speed on the Control Light to account for lag\n\nPlease note, the Control Light brightness must be
+    able to scale between 1-100. When Minimum Brightness is > 1, the script will ensure the Target Light never falls below that value, with an adjusted linear scale 
+    between the minimum value and 100%. Because of this, the brightness value for each light will appear different."
   domain: automation
   input:
     controlling_light:
