@@ -1,12 +1,12 @@
 blueprint:
   name: Light Sync
   description: "Sync the on/off state and brightness of one light to another light(s)\n\nThe following recommended settings will help make the transitions more fluid:\n\n- 
-    Transitions from on/off/etc should be set to 0 for all devices\n- Default On Level should match for all devices \n- The device settings for the Controlling Light 
-    should not have a minimum brigtness"
+    Transitions from on to off should be set to 0 for all devices\n- Initial On Level should match for all devices \n- The device settings for the Control Light 
+    should not have a minimum brigtness\n- Slow down the dimming speed on the Control Light to account for lag\n\nPlease note, the Control Light brightness must be able to scale between 1-100. When Minimum Brightness is > 1, the script will ensure the Target Light never falls below that value, with an adjusted linear scale between the minimum value and 100%. Because of this, the brightness value for each light will appear different."
   domain: automation
   input:
     controlling_light:
-      name: Controlling Light
+      name: Control Light
       description: Input the light entity that will be in control
       selector:
         entity:
@@ -16,7 +16,7 @@ blueprint:
           multiple: false
     target_light:
       name: Target Light
-      description: Input the light entity/entities that will sync to the Controlling Light
+      description: Input the light entity/entities that will sync to the Control Light
       selector:
         entity:
           filter:
@@ -24,13 +24,14 @@ blueprint:
             - light
           multiple: true
     min_brightness:
-      name: Min Brightness
+      name: Minimum Brightness
       description: Set the minimum brightness for the target light(s), as a percentage (1-100).
       default: 1
       selector:
         number:
           min: 1
           max: 100
+  source_url: https://github.com/jay-kub/ha-light-sync/blob/main/ha-light-sync.yaml
 mode: restart
 max_exceeded: silent
 variables:
