@@ -1,10 +1,13 @@
 blueprint:
   name: Light Sync
-  description: Sync the state and brightness of one light to another light(s)
+  description: "Sync the on/off state and brightness of one light to another light(s)\n\nThe following recommended settings will help make the transitions more fluid:\n\n- 
+    Transitions from on/off/etc should be set to 0 for all devices\n- Default On Level should match for all devices \n- The device settings for the Controlling Light 
+    should not have a minimum brigtness"
   domain: automation
   input:
     controlling_light:
       name: Controlling Light
+      description: Input the light entity that will be in control
       selector:
         entity:
           filter:
@@ -13,6 +16,7 @@ blueprint:
           multiple: false
     target_light:
       name: Target Light
+      description: Input the light entity/entities that will sync to the Controlling Light
       selector:
         entity:
           filter:
