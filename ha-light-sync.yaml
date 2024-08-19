@@ -22,6 +22,7 @@ blueprint:
     min_brightness:
       name: Min Brightness
       description: Set the minimum brightness for the target light(s), as a percentage (1-100).
+      default: 1
       selector:
         number:
           min: 1
