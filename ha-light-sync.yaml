@@ -1,15 +1,29 @@
 blueprint:
   name: Light Sync
-  description: "Sync the on/off state and brightness of one light to another light(s)\n\nThe following recommended settings will help make the transitions more fluid:\n\n- 
-    Transitions from on to off should be set to 0 for all devices\n- Initial On Level should match for all devices \n- The device settings for the Control Light 
-    should not have a minimum brigtness\n- Slow down the dimming speed on the Control Light to account for lag\n\nPlease note, the Control Light brightness must be
-    able to scale between 1-100. When Minimum Brightness is > 1, the script will ensure the Target Light never falls below that value, with an adjusted linear scale 
-    between the minimum value and 100%. Because of this, the brightness value for each light will appear different."
+  description: |
+    ## HA Light Sync
+
+    ### This Home Assistant Blueprint will create an Automation to:
+
+      - Sync the on/off state and brightness from a Control Light to a Target Light.
+
+    If your Control Light is a Smart Light Switch, adjust the device settings as follows to make transitions more fluid:
+
+      - Slow down the dimming speed on the switch to account for lag
+      - Transition speed should be set to 0 for all devices
+      - Default brightness when turned on should match for all devices
+      - If the target light already has a device setting for minimum brightness, then leave the blueprint minimum brightness at 1
+
+    Version 0.2
+
+    ### Support
+
+    Go to https://github.com/jay-kub/ha-light-sync to report issues or request new features.
   domain: automation
   input:
-    controlling_light:
+    control_light:
       name: Control Light
-      description: Input the light entity that will be in control
+      description: Select the light entity that will be in control
       selector:
         entity:
           filter:
@@ -18,55 +32,133 @@ blueprint:
           multiple: false
     target_light:
       name: Target Light
-      description: Input the light entity/entities that will sync to the Control Light
+      description: |
+        Select the light entity that will be synced to the Control Light
+        Hint: to control multiple lights, create a light group
       selector:
         entity:
           filter:
           - domain:
             - light
           multiple: true
-    min_brightness:
-      name: Minimum Brightness
-      description: Set the minimum brightness for the target light(s), as a percentage (1-100).
-      default: 1
+    brightness_sync:
+      name: Brightness Sync
+      description: Sync the brightness from the Control Light to the Target Light
+      default: true
       selector:
-        number:
-          min: 1
-          max: 100
+        boolean: {}
+    min_brightness:
+       name: Minimum Brightness
+       description: Set the minimum brightness percent for the target light.
+       default: 1
+       selector:
+         number:
+           min: 1.0
+           max: 100.0
+           step: 1.0
+           mode: slider
+    reverse_sync:
+      name: Reverse Sync
+      description: If the Target Light is toggled on/off by an outside source, the Control light will sync.
+      default: false
+      selector:
+        boolean: {}
   source_url: https://github.com/jay-kub/ha-light-sync/blob/main/ha-light-sync.yaml
-mode: restart
+mode: queued
 max_exceeded: silent
 variables:
-  controllingLight: !input controlling_light
-  controllingLightBrightness: |
-    {{ (state_attr(controllingLight, 'brightness') / 2.55) }}
-  minBrightness: !input min_brightness
-  brightnessValue: |
-    {{ ((((100 - minBrightness) / 99 ) * controllingLightBrightness + minBrightness - (100 - minBrightness) / 99 ) * 2.55) | round(0) }}
-trigger:
-- platform: state
-  entity_id: !input controlling_light
-- platform: state
-  entity_id: !input controlling_light
-  attribute: brightness
-condition: []
-action:
-  - choose:
-      - conditions:
-          - condition: state
-            entity_id: !input controlling_light
-            state: "on"
+  reverseSyncEnabled: !input reverse_sync
+  controlLight: !input control_light
+
+triggers:
+  - platform: state
+    entity_id: !input control_light
+    id: turnOff
+    from: "on"
+    to: "off"
+  - platform: state
+    entity_id: !input target_light
+    id: reverseSyncTurnOff
+    from: "on"
+    to: "off"
+  - platform: state
+    entity_id: !input target_light
+    id: reverseSyncTurnOn
+    from: "off"
+    to: "on"
+  - platform: state
+    entity_id: !input control_light
+    attribute: brightness
+    id: turnOn
+
+conditions: []
+
+actions:
+- choose:
+  - conditions:
+      - condition: trigger
+        id:
+          - turnOff
+    sequence:
+    - action: light.turn_off
+      metadata: {}
+      data: {}
+      target:
+        entity_id: !input target_light
+  - conditions:
+      - condition: trigger
+        id:
+          - reverseSyncTurnOff
+          - reverseSyncTurnOn
+    sequence:
+      - if: '{{ reverseSyncEnabled }}'
+        then:
+          - choose:
+              - conditions:
+                  - condition: trigger
+                    id:
+                      - reverseSyncTurnOff
+                sequence:
+                - action: light.turn_off
+                  target:
+                    entity_id: !input control_light
+                  data: {}
+              - conditions:
+                  - condition: trigger
+                    id:
+                      - reverseSyncTurnOn
+                sequence:
+                - action: light.turn_on
+                  target:
+                    entity_id: !input control_light
+                  data: {}
+  - conditions:
+      - condition: trigger
+        id:
+          - turnOn
+      - condition: state
+        entity_id: !input control_light
+        state: "on" 
+    sequence:
+    - variables:
+        controlLightBrightness: |
+          {{ (state_attr(controlLight, 'brightness') / 2.55) }}
+        minBrightness: !input min_brightness
+        targetBrightnessPct: |
+          {{ (((100 - minBrightness) / 100 ) * controlLightBrightness + minBrightness ) | round(0) }}
+        brightnessSyncEnabled: !input brightness_sync
+    - choose:
+      - conditions: '{{ brightnessSyncEnabled }}'
         sequence:
-          - data:
-              brightness: '{{ brightnessValue }}'
-            action: light.turn_on
-            target:
-              entity_id: !input target_light
+        - action: light.turn_on
+          metadata: {}
+          data:
+            brightness_pct: '{{ targetBrightnessPct }}'
+          target:
+            entity_id: !input target_light
       - conditions:
-          - condition: state
-            entity_id: !input controlling_light
-            state: "off"
         sequence:
-          - data:
-              entity_id: !input target_light
-            action: light.turn_off
+        - action: light.turn_on
+          metadata: {}
+          target:
+            entity_id: !input target_light
